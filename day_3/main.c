@@ -3,10 +3,28 @@
 
 #define SIZE 140
 
-int coords[SIZE][SIZE] = {0};
+struct GearInfo {
+    int count;
+    long prod;
+};
 
-int check(int left, int right, int row) {
-    if ((left>=0 && coords[row][left]) || (right < SIZE && coords[row][right])) {
+int coords[SIZE][SIZE] = {0};
+struct GearInfo gears[SIZE][SIZE];
+
+int check(int left, int right, int row, int num) {
+    if (left>=0 && coords[row][left]) {
+        if (coords[row][left] == -1) {
+            gears[row][left].count++;
+            gears[row][left].prod*=num;
+        }
+        return 1;
+    }
+
+    if (right < SIZE && coords[row][right]) {
+        if (coords[row][right] == -1) {
+            gears[row][right].count++;
+            gears[row][right].prod*=num;
+        }
         return 1;
     }
 
@@ -20,7 +38,12 @@ int check(int left, int right, int row) {
 
     if (row - 1 >= 0) {
         for (int i = left; i <= right; i++) {
-            if (coords[row-1][i]) {
+            int x = coords[row-1][i];
+            if (x == -1) {
+                gears[row-1][i].count++;
+                gears[row-1][i].prod*=num;
+            }
+            if (x) {
                 return 1;
             }
         }
@@ -28,7 +51,12 @@ int check(int left, int right, int row) {
 
     if (row + 1 < SIZE) {
         for (int i = left; i <= right; i++) {
-            if (coords[row+1][i]) {
+            int x = coords[row+1][i];
+            if (x == -1) {
+                gears[row+1][i].count++;
+                gears[row+1][i].prod*=num;
+            }
+            if (x) {
                 return 1;
             }
         }
@@ -38,6 +66,16 @@ int check(int left, int right, int row) {
 }
 
 int main() {
+    // initialize the gears array
+    for (int i=0; i < SIZE; i++) {
+        for (int j=0; j < SIZE; j++) {
+            gears[i][j] = (struct GearInfo) {
+                .count = 0,
+                .prod = 1
+            };
+        }   
+    }
+
     FILE* file = fopen("./input", "r");
 
     int y = 0;
@@ -51,6 +89,10 @@ int main() {
 
             if (!(buf[x] >= '0' && buf[x] <= '9') && buf[x] != '.') {
                 coords[y][x] = 1;
+
+                if (buf[x] == '*') {
+                    coords[y][x] = -1; // gear symbol
+                }
             }
         }
         y++;
@@ -78,7 +120,7 @@ int main() {
 
                 right = i;
 
-                if (check(left, right, y)) {
+                if (check(left, right, y, num)) {
                     sum_of_valid_parts += num;
                 }
             }
@@ -87,7 +129,18 @@ int main() {
         y++;
     }
 
+    long sum_of_gears = 0;
+    for (y=0; y < SIZE; y++) {
+        for (int x=0; x<SIZE; x++) {
+            if (gears[y][x].count == 2) {
+                sum_of_gears += gears[y][x].prod;
+            }
+        }
+    }
+
+
     printf("Part 1 answer: %ld\n", sum_of_valid_parts);
+    printf("Part 2 answer: %ld\n", sum_of_gears);
 
     fclose(file);
     return 0;
