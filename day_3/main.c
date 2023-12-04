@@ -3,27 +3,28 @@
 
 #define SIZE 140
 
-struct GearInfo {
+struct CellInfo {
     int count;
     long prod;
+    int is_symbol;
+    int is_gear;
 };
 
-int coords[SIZE][SIZE] = {0};
-struct GearInfo gears[SIZE][SIZE];
+struct CellInfo symbols[SIZE][SIZE];
 
 int check(int left, int right, int row, int num) {
-    if (left>=0 && coords[row][left]) {
-        if (coords[row][left] == -1) {
-            gears[row][left].count++;
-            gears[row][left].prod*=num;
+    if (left>=0 && symbols[row][left].is_symbol) {
+        if (symbols[row][left].is_gear) {
+            symbols[row][left].count++;
+            symbols[row][left].prod*=num;
         }
         return 1;
     }
 
-    if (right < SIZE && coords[row][right]) {
-        if (coords[row][right] == -1) {
-            gears[row][right].count++;
-            gears[row][right].prod*=num;
+    if (right < SIZE && symbols[row][right].is_symbol) {
+        if (symbols[row][right].is_gear) {
+            symbols[row][right].count++;
+            symbols[row][right].prod*=num;
         }
         return 1;
     }
@@ -38,12 +39,11 @@ int check(int left, int right, int row, int num) {
 
     if (row - 1 >= 0) {
         for (int i = left; i <= right; i++) {
-            int x = coords[row-1][i];
-            if (x == -1) {
-                gears[row-1][i].count++;
-                gears[row-1][i].prod*=num;
+            if (symbols[row-1][i].is_gear) {
+                symbols[row-1][i].count++;
+                symbols[row-1][i].prod*=num;
             }
-            if (x) {
+            if (symbols[row-1][i].is_symbol) {
                 return 1;
             }
         }
@@ -51,12 +51,11 @@ int check(int left, int right, int row, int num) {
 
     if (row + 1 < SIZE) {
         for (int i = left; i <= right; i++) {
-            int x = coords[row+1][i];
-            if (x == -1) {
-                gears[row+1][i].count++;
-                gears[row+1][i].prod*=num;
+            if (symbols[row+1][i].is_gear) {
+                symbols[row+1][i].count++;
+                symbols[row+1][i].prod*=num;
             }
-            if (x) {
+            if (symbols[row+1][i].is_symbol) {
                 return 1;
             }
         }
@@ -66,81 +65,98 @@ int check(int left, int right, int row, int num) {
 }
 
 int main() {
-    // initialize the gears array
+    // initialize the symbols array
     for (int i=0; i < SIZE; i++) {
         for (int j=0; j < SIZE; j++) {
-            gears[i][j] = (struct GearInfo) {
+            symbols[i][j] = (struct CellInfo) {
                 .count = 0,
-                .prod = 1
+                .prod = 1,
+                .is_symbol = 0,
+                .is_gear = 0,
             };
         }   
     }
 
+    // open the input file
     FILE* file = fopen("./input", "r");
 
-    int y = 0;
+    int line_number = 0;
 
     char buf[256];
+    // read each line
     while (fgets(buf, 256, file)) {
+        // go thru each character till we reach the end of line
         for (int x=0; x <256; x++) {
             if (buf[x] == 0 || buf[x] == '\n') {
                 break;
             }
 
+            // record the cells that are non-numbers and dots - a.k.a. useful
             if (!(buf[x] >= '0' && buf[x] <= '9') && buf[x] != '.') {
-                coords[y][x] = 1;
+                symbols[line_number][x].is_symbol = 1;
 
+                // if the cell is a gear cell, note that down
                 if (buf[x] == '*') {
-                    coords[y][x] = -1; // gear symbol
+                    symbols[line_number][x].is_gear = 1;
                 }
             }
         }
-        y++;
+        line_number++;
     }
 
+    // move to the beginning of the file
+    // because we need to read stuff again
     fseek(file, 0, SEEK_SET);
     
     long sum_of_valid_parts = 0;
-
-    y = 0;
+    // reset the line counter
+    line_number = 0;
     
+    // for each line
     while (fgets(buf, 256, file)) {
         int i = 0;
 
         while (i < SIZE) {
+            // if the char is a number
             if (buf[i] >= '0' && buf[i] <= '9') {
                 int left, right;
                 left = i-1;
 
+                // atoi will try to read the chars into a number
+                // starting from the provided position
+                // so: '599...$%' will be 599
                 int num = atoi(buf+i);
 
+                // skip the numeric chars so that we can find the bounding box
                 while (i < SIZE && (buf[i] >= '0' && buf[i] <= '9')) {
                     i++;
                 }
 
                 right = i;
 
-                if (check(left, right, y, num)) {
+                // check if the number is valid to be added to the sum
+                if (check(left, right, line_number, num)) {
                     sum_of_valid_parts += num;
                 }
             }
             i++;
         }
-        y++;
+        line_number++;
     }
 
-    long sum_of_gears = 0;
-    for (y=0; y < SIZE; y++) {
+    long sum_of_gears_ratio = 0;
+    for (line_number=0; line_number < SIZE; line_number++) {
         for (int x=0; x<SIZE; x++) {
-            if (gears[y][x].count == 2) {
-                sum_of_gears += gears[y][x].prod;
+            // if the gear is right next to exactly 2 numbers, add the gear ratio to the sum
+            if (symbols[line_number][x].count == 2) {
+                sum_of_gears_ratio += symbols[line_number][x].prod;
             }
         }
     }
 
 
     printf("Part 1 answer: %ld\n", sum_of_valid_parts);
-    printf("Part 2 answer: %ld\n", sum_of_gears);
+    printf("Part 2 answer: %ld\n", sum_of_gears_ratio);
 
     fclose(file);
     return 0;
