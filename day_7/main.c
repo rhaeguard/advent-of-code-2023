@@ -127,6 +127,62 @@ char get_type(Pair* x) {
     return two(x);
 }
 
+char get_type2(Pair* x) {
+    char k = five(x);
+    if (k != NONE) {return k;}
+
+    k = four(x);
+    if (k != NONE) {
+        int j = get_j_count(x);
+        if (j != 0) { // 1 or 4 Js
+            return FIVE;    
+        }
+        return k;
+    }
+
+    k = full(x);
+    if (k != NONE) {
+        int j = get_j_count(x);
+
+        if (k == FULL) {
+            if (j == 3 || j == 2) {
+                return FIVE;    
+            }
+            if (j == 1) {
+                return FOUR;    
+            }
+        } else {
+            // THREE
+            if (j == 3 || j == 1) {
+                return FOUR;
+            }
+        }
+        return k;
+    }
+
+    k = two(x);
+    // TWO
+    // ONE
+    // HIGH
+    int j = get_j_count(x);
+
+    if (k == TWO) {
+        if (j == 2) {
+            return FOUR;
+        }
+
+        if (j == 1) {
+            return FULL;
+        }
+    } else if (k == ONE && (j == 2 || j == 1)) {
+        return THREE;
+    } else if (j == 1) {
+        return ONE;
+    }
+
+    return k;
+}
+
 
 int cmpfunc (const void * a, const void * b) {
     int strength[91] = {0};
@@ -149,6 +205,42 @@ int cmpfunc (const void * a, const void * b) {
 
     char tx = get_type(x);
     char ty = get_type(y);
+
+    int res = tx - ty;
+
+    if (tx == ty) {
+        for (int i = 0; i < 5; i++) {
+            if (x->hand[i] != y->hand[i]) {
+                res = strength[x->hand[i]] - strength[y->hand[i]];
+                break;
+            }
+        }
+    }
+
+    return res;
+}
+
+int cmpfunc2 (const void * a, const void * b) {
+    int strength[91] = {0};
+    strength['A'] = 13;
+    strength['K'] = 12;
+    strength['Q'] = 11;
+    strength['J'] = 0;
+    strength['T'] = 9;
+    strength['9'] = 8;
+    strength['8'] = 7;
+    strength['7'] = 6;
+    strength['6'] = 5;
+    strength['5'] = 4;
+    strength['4'] = 3;
+    strength['3'] = 2;
+    strength['2'] = 1;
+    
+    Pair* x = (Pair*) a;
+    Pair* y = (Pair*) b;
+
+    char tx = get_type2(x);
+    char ty = get_type2(y);
 
     int res = tx - ty;
 
@@ -191,6 +283,16 @@ int main() {
     }
 
     printf("Part 1 answer: %ld\n", sum);
+
+
+    qsort(all_hands, TOTAL_HANDS, sizeof(Pair), cmpfunc2);
+
+    sum = 0L;
+    for (int i = 0; i < TOTAL_HANDS; i++) {
+        sum += (i+1) * all_hands[i].bid;
+    }
+
+    printf("Part 2 answer: %ld\n", sum);
 
     fclose(file);
 
