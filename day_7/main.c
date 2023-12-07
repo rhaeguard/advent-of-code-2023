@@ -17,18 +17,7 @@ char ONE = 'c';
 char HIGH = 'b';
 char NONE = 'a';
 
-char five(Pair* x) {
-    char f = x->hand[0];
-    
-    for (int i=1; i < 5; i++) {
-        if (x->hand[i] != f) {
-            return NONE;
-        }
-    }
-    return FIVE;
-}
-
-char four(Pair* x) {
+char two(Pair* x) {
     int table[91] = {0};
 
     for (int i=0; i < 5; i++) {
@@ -36,13 +25,23 @@ char four(Pair* x) {
         table[c] += 1;
     }
 
+    int twos = 0;
+
     for (int i = 0; i < 91; i++) {
-        if (table[i] == 4) {
-            return FOUR;
+        if (table[i] == 2) {
+            twos++;
         }
     }
 
-    return NONE;
+    if (twos == 2) {
+        return TWO;
+    }
+
+    if (twos == 1) {
+        return ONE;
+    }
+
+    return HIGH;
 }
 
 
@@ -64,7 +63,7 @@ char full(Pair* x) {
     }
 
     if (!has_three) {
-        return NONE;
+        return two(x);
     }
 
     for (int i = 0; i < 91; i++) {
@@ -76,7 +75,7 @@ char full(Pair* x) {
     return THREE;
 }
 
-char two(Pair* x) {
+char four(Pair* x) {
     int table[91] = {0};
 
     for (int i=0; i < 5; i++) {
@@ -84,23 +83,24 @@ char two(Pair* x) {
         table[c] += 1;
     }
 
-    int has_two = 0;
-
     for (int i = 0; i < 91; i++) {
-        if (table[i] == 2) {
-            has_two++;
+        if (table[i] == 4) {
+            return FOUR;
         }
     }
 
-    if (has_two == 2) {
-        return TWO;
-    }
+    return full(x);
+}
 
-    if (has_two == 1) {
-        return ONE;
+char five(Pair* x) {
+    char f = x->hand[0];
+    
+    for (int i=1; i < 5; i++) {
+        if (x->hand[i] != f) {
+            return four(x);
+        }
     }
-
-    return HIGH;
+    return FIVE;
 }
 
 int get_j_count(Pair* x) {
@@ -110,61 +110,41 @@ int get_j_count(Pair* x) {
             c++;
         }
     }
-
     return c;
 }
 
 char get_type(Pair* x) {
-    char k = five(x);
-    if (k != NONE) {return k;}
-
-    k = four(x);
-    if (k != NONE) {return k;}
-
-    k = full(x);
-    if (k != NONE) {return k;}
-
-    return two(x);
+    return five(x);
 }
 
-char get_type2(Pair* x) {
-    char k = five(x);
-    if (k != NONE) {return k;}
+char get_type_with_joker(Pair* x) {
+    char k = get_type(x);
+    if (k == FIVE) {
+        return k;
+    }
 
-    k = four(x);
-    if (k != NONE) {
-        int j = get_j_count(x);
+    int j = get_j_count(x);
+    if (k == FOUR) {
         if (j != 0) { // 1 or 4 Js
             return FIVE;    
         }
         return k;
     }
 
-    k = full(x);
-    if (k != NONE) {
-        int j = get_j_count(x);
-
-        if (k == FULL) {
-            if (j == 3 || j == 2) {
-                return FIVE;    
-            }
-            if (j == 1) {
-                return FOUR;    
-            }
-        } else {
-            // THREE
-            if (j == 3 || j == 1) {
-                return FOUR;
-            }
+    if (k == FULL) {
+        if (j == 3 || j == 2) {
+            return FIVE;    
+        }
+        if (j == 1) {
+            return FOUR;    
+        }
+        return k;
+    } else if (k == THREE) {
+        if (j == 3 || j == 1) {
+            return FOUR;
         }
         return k;
     }
-
-    k = two(x);
-    // TWO
-    // ONE
-    // HIGH
-    int j = get_j_count(x);
 
     if (k == TWO) {
         if (j == 2) {
@@ -179,7 +159,6 @@ char get_type2(Pair* x) {
     } else if (j == 1) {
         return ONE;
     }
-
     return k;
 }
 
@@ -220,7 +199,7 @@ int cmpfunc (const void * a, const void * b) {
     return res;
 }
 
-int cmpfunc2 (const void * a, const void * b) {
+int cmpfunc_with_joker (const void * a, const void * b) {
     int strength[91] = {0};
     strength['A'] = 13;
     strength['K'] = 12;
@@ -239,8 +218,8 @@ int cmpfunc2 (const void * a, const void * b) {
     Pair* x = (Pair*) a;
     Pair* y = (Pair*) b;
 
-    char tx = get_type2(x);
-    char ty = get_type2(y);
+    char tx = get_type_with_joker(x);
+    char ty = get_type_with_joker(y);
 
     int res = tx - ty;
 
@@ -285,7 +264,7 @@ int main() {
     printf("Part 1 answer: %ld\n", sum);
 
 
-    qsort(all_hands, TOTAL_HANDS, sizeof(Pair), cmpfunc2);
+    qsort(all_hands, TOTAL_HANDS, sizeof(Pair), cmpfunc_with_joker);
 
     sum = 0L;
     for (int i = 0; i < TOTAL_HANDS; i++) {
