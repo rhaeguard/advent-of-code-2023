@@ -29,7 +29,7 @@ int in_range(long num, Range* range) {
     return num >= range->src && num <= range->src + range->length;
 }
 
-long find_value(long src, Range** ranges) {
+long find_value(long src, Range** ranges[MAP_SIZE]) {
 
     for (int i=0; i<MAP_SIZE;i++) {
         Range* r = ranges[i];
@@ -46,7 +46,7 @@ long find_value(long src, Range** ranges) {
     return src;
 }
 
-void range_overlaps(long start, long end, Range* range, long* out, Range** ranges) {
+void range_overlaps(long start, long end, Range* range, long* out, Range** ranges[MAP_SIZE]) {
     long ss = range->src;
     long ee = range->src + range->length;
 
@@ -58,8 +58,8 @@ void range_overlaps(long start, long end, Range* range, long* out, Range** range
     long os = start > ss ? start : ss;
     long oe = end < ee ? end : ee;
 
-    out[0] = os;
-    out[1] = oe;
+    out[0] = os - ss + range->dest;
+    out[1] = oe - ss + range->dest;
 
     long los = -1;
     long loe = -1;
@@ -70,7 +70,7 @@ void range_overlaps(long start, long end, Range* range, long* out, Range** range
     // left overlap
     if (os > start) {
         los = start;
-        loe = os-1;
+        loe = os;
 
         out[2] = los;
         out[3] = loe;
@@ -80,21 +80,14 @@ void range_overlaps(long start, long end, Range* range, long* out, Range** range
     // right overlap
     if (oe < end) {
         roe = end;
-        ros = oe+1;
+        ros = oe;
 
         out[4] = ros;
         out[5] = roe;
     }
-
-    for (int y=0; y < 6; y++) {
-        if (out[y] == -1) {
-            continue;
-        }
-        out[y] = find_value(out[y], ranges);
-    }
 }
 
-void init(Range** range) {
+void init(Range** range[MAP_SIZE]) {
     for (int i=0; i<MAP_SIZE;i++) {
         range[i] = NULL;
     }
@@ -102,7 +95,7 @@ void init(Range** range) {
 
 #define SIZE 1000
 
-void phase(long* pairs, Range** the_range) {
+void phase(long* pairs, Range** the_range[MAP_SIZE]) {
     int pair_index = 0;
     long temp[SIZE];
     for (int k = 0; k < SIZE; k++) {
@@ -124,9 +117,8 @@ void phase(long* pairs, Range** the_range) {
             if (out[0] != -1) {
                 for (int y=0; y < 6; y+=2) {
                     if (out[y] != -1) {
-                        temp[pair_index] = out[y];
-                        temp[pair_index+1] = out[y+1];
-                        pair_index += 2;
+                        temp[pair_index++] = out[y];
+                        temp[pair_index++] = out[y+1];
                     }
                 }
                 found = 1;
@@ -134,9 +126,8 @@ void phase(long* pairs, Range** the_range) {
             }
         }
         if (!found) {
-            temp[pair_index] = start;
-            temp[pair_index+1] = end;
-            pair_index+=2;
+            temp[pair_index++] = start;
+            temp[pair_index++] = end;
         }
     }
 
@@ -170,6 +161,41 @@ void p2(
         printf("[%ld/%ld]\n", xx, inp->end);
     }
     inp->min = min;
+}
+
+void multithreaded_part2(long* seeds, int seed_size) {
+    long min = -1;
+    int seed_range_count = 10;
+    pthread_t ts[seed_range_count];
+    Input* inputs[seed_range_count];
+
+    for (int i = 0; i < seed_size; i+=2) {
+        long start = seeds[i];
+        long length = seeds[i+1];
+        long end = start + length - 1;
+
+        Input* inp = malloc(sizeof(Input));
+        inp->start = start;
+        inp->end = end;
+        inp->min = -1;
+
+        inputs[i / 2] = inp;
+
+        pthread_create(&ts[i/2], NULL, p2, (void *) inp);
+    }
+
+    for (int i = 0; i < seed_range_count; i++) {
+        pthread_join(ts[i], NULL);
+
+        Input* ii = inputs[i];
+        if (min == -1) {
+            min = ii->min;
+        } else {
+            min = min > ii->min ? ii->min : min;
+        }
+    }
+
+    printf("Part 2 answer: %ld\n", min);
 }
 
 int main() {
@@ -307,45 +333,6 @@ int main() {
 
     printf("Part 1 answer: %ld\n", min);
 
-    min = -1;
-    int seed_range_count = 10;
-    pthread_t ts[seed_range_count];
-    Input* inputs[seed_range_count];
-
-    for (int i = 0; i < seed_size; i+=2) {
-        long start = seeds[i];
-        long length = seeds[i+1];
-        long end = start + length - 1;
-
-        Input* inp = malloc(sizeof(Input));
-        inp->start = start;
-        inp->end = end;
-        inp->min = -1;
-
-        inputs[i / 2] = inp;
-
-        pthread_create(&ts[i/2], NULL, p2, (void *) inp);
-    }
-
-    for (int i = 0; i < seed_range_count; i++) {
-        pthread_join(ts[i], NULL);
-
-        Input* ii = inputs[i];
-        if (min == -1) {
-            min = ii->min;
-        } else {
-            min = min > ii->min ? ii->min : min;
-        }
-    }
-
-    printf("Part 2 answer: %ld\n", min);
-
-    /*
-    this part 2 implementation is fast, but does not 
-    really produce the correct answer on the actual input, works for the small input tho
-    
-    I might return to it to fix it.
-    */
     int pair_index = 0;
     long pairs[SIZE];
     for (int k = 0; k < SIZE; k++) {
@@ -359,11 +346,6 @@ int main() {
         pairs[pair_index] = start;
         pairs[pair_index+1] = end;
         pair_index += 2;
-    }
-
-    long temp[SIZE];
-    for (int k = 0; k < SIZE; k++) {
-        temp[k] = -1;
     }
 
     phase(pairs, seedToSoil);
@@ -384,8 +366,6 @@ int main() {
             min = min > pairs[k] ? pairs[k] : min;
         }
     }
-
-    /////
 
     printf("Part 2 answer: %ld\n", min);
     
