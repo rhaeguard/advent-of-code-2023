@@ -6,31 +6,40 @@ typedef struct Network {
     char name[3];
     char left[3];
     char right[3];
+    int active;
 } Node;
 
 #define NODE_COUNT 750
+#define TABLE_CAPACITY 30000
 
-int scmp(char* a, char* b) {
-    for (int i = 0; i < 3; i++) {
-        if (a[i] != b[i]) {
-            return 0;
-        }
-    }
-    return 1;
+static inline long gcd(long a, long b) { 
+    return b == 0 ? a : gcd(b, a % b); 
+} 
+  
+static inline long lcm(long a, long b) { 
+    return (a*b / gcd(a, b)); 
+} 
+
+unsigned int hash(char arr[3]) {
+    unsigned int hash = 0;
+    hash = 31*hash + arr[0];
+    hash = 31*hash + arr[1];
+    hash = 31*hash + arr[2];
+    return hash % TABLE_CAPACITY;
 }
 
-int find(Node* nodes, char name[3]) {
-    for (int i=0; i < NODE_COUNT; i++) {
-        Node node = nodes[i];
-        if (scmp(name, node.name)) {
-            return i;
-        }
-    }
-    return -1;
+static inline int scmp(char* a, char* b) {
+    return a[0] == b[0] && a[1] == b[1] && a[2] == b[2];
+}
+
+Node* find_in_lookup(Node** lookup, char name[3]) {
+    int ix = hash(name);
+    return lookup[ix];
 }
 
 int main() {
-    Node nodes[NODE_COUNT];
+    Node* lookup[TABLE_CAPACITY];
+    Node* nodes[NODE_COUNT];
     FILE* file = fopen("./input", "r");
 
     char directions[300];
@@ -42,43 +51,81 @@ int main() {
 
     int line_no = 0;
     while (fgets(buf, 25, file)) {
+        Node* node = malloc(sizeof(Node));
         sscanf(
             buf, 
             "%3s = (%3s, %3s)",
-            nodes[line_no].name,
-            nodes[line_no].left,
-            nodes[line_no].right
+            node->name,
+            node->left,
+            node->right
         );
+        node->active = 0; // false by default
+
+        int ix = hash(node->name);
+        if (lookup[ix] == NULL) {
+            lookup[ix] = node;
+        } else {
+            printf("COLLISION!!!\n");
+        }
+        nodes[line_no] = node;
         line_no++;
     }
 
-    int i = 0;
+    int dir = 0;
     int steps = 0;
-    char current[3] = "AAA";
+    Node* current = find_in_lookup(lookup, "AAA");
 
     while (1) {
         steps++;
-        if (directions[i] == '\n') {
-            i = 0;
+        if (directions[dir] == '\n') {
+            dir = 0;
         }
 
-        int index = find(nodes, current);
-        if (directions[i] == 'L') {
-            memcpy(current, nodes[index].left, 3);
+        if (directions[dir] == 'L') {
+            current = find_in_lookup(lookup, current->left);
         } else {
-            memcpy(current, nodes[index].right, 3);
+            current = find_in_lookup(lookup, current->right);
         }
 
-        if (scmp(current, "ZZZ")) {
-            printf("there!\n");
+        if (scmp(current->name, "ZZZ")) {
             break;
         }
 
-        i++;
+        dir++;
     }
 
     printf("Part 1 answer: %d\n", steps);
 
+    long answer2 = 1;
+
+    for (int j = 0; j < TABLE_CAPACITY; j++) {
+        Node* start = nodes[j];
+        if (start->name[2] == 'A') {
+            
+            long steps = 0; // reset the steps counter
+            dir = 0; // reset directions index
+
+            while (1) {
+                steps++;
+                if (directions[dir] == '\n') {
+                    dir = 0;
+                }
+
+                char* name = directions[dir] == 'L' ? start->left : start->right;
+                start = find_in_lookup(lookup, name);
+
+                if (start->name[2] == 'Z') {
+                    answer2 = lcm(answer2, steps);
+                    break;
+                }
+
+                dir++;
+            }
+        }
+    }
+
+    printf("Part 2 answer: %ld\n", answer2);
+    
     fclose(file);
     return 0;
 }
