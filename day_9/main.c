@@ -12,7 +12,7 @@ int check_if_all_zeros(long* arr[ELEMENT_COUNT], int len) {
     return 1;
 }
 
-long reduce(long* input[ELEMENT_COUNT]) {
+void reduce(long* input[ELEMENT_COUNT], long* next_sum, long* prev_sum) {
     long steps[ELEMENT_COUNT+1][ELEMENT_COUNT+1] = {{0}};
 
     for (int i=0; i < ELEMENT_COUNT; i++) {
@@ -22,6 +22,8 @@ long reduce(long* input[ELEMENT_COUNT]) {
     int j = 0;
     int len = ELEMENT_COUNT;
     long t = input[ELEMENT_COUNT-1];
+    long z = input[0];
+    long sign = -1;
     while (!check_if_all_zeros(steps[j], len)) {
         long* elements = steps[j];
         if (j == ELEMENT_COUNT - 1) {
@@ -33,10 +35,14 @@ long reduce(long* input[ELEMENT_COUNT]) {
             steps[j+1][k] = a;
         }
         t += steps[j+1][len-2];
+        z = z + sign*steps[j+1][0];
+        sign = sign * -1;
         j++;
         len--;
     }
-    return t;
+
+    *prev_sum = *prev_sum + z;
+    *next_sum = *next_sum + t;
 }
 
 int main() {
@@ -44,7 +50,8 @@ int main() {
 
     char buf[512];
 
-    long sum = 0;
+    long next_sum = 0;
+    long prev_sum = 0;
 
     while (fgets(buf, 512, file)) {
         int i = 0;
@@ -62,11 +69,12 @@ int main() {
             }
         }
 
-        sum += reduce(input);
+        reduce(input, &next_sum, &prev_sum);
 
     }
 
-    printf("Part 1 answer: %ld\n", sum);
+    printf("Part 1 answer: %ld\n", next_sum);
+    printf("Part 2 answer: %ld\n", prev_sum);
 
     fclose(file);
     return 0;
