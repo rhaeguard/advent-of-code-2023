@@ -146,6 +146,10 @@ void bfs(char input[SIZE][SIZE], int r, int c) {
 
     for (;;) {
         if (neighbors[0] == neighbors[2] && neighbors[1] == neighbors[3]) {
+            r = neighbors[0];
+            c = neighbors[1];
+
+            seen[r][c] = 1;
             break;
         }
 
@@ -176,6 +180,28 @@ void bfs(char input[SIZE][SIZE], int r, int c) {
     }
 
     printf("Part 1 answer: %d\n", depth);
+
+    int tiles = 0;
+
+    // https://en.wikipedia.org/wiki/Point_in_polygon
+    // ray casting algorithm
+    for (int row=0; row < SIZE; row++) {
+        for (int col=0; col < SIZE; col++) {
+            if (!seen[row][col]) {
+                int count = 0;
+                for (int s=col; s < SIZE; s++) {
+                    if (seen[row][s] && is_in(input[row][s], "|JL", 3)) {
+                        count++;
+                    }
+                }
+                if (count % 2 == 1) {
+                    tiles++;
+                }
+            }
+        }
+    }
+
+    printf("Part 2 answer: %d\n", tiles);
 }
 
 int main() {
