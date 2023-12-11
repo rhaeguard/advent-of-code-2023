@@ -57,7 +57,7 @@ char decide_directions(Galaxy* from, Galaxy* to) {
 }
 
 
-Galaxy* bfs(Galaxy* from, Galaxy* to, int expanded_rows[SIZE], int expanded_cols[SIZE]) {
+Galaxy* distance(Galaxy* from, Galaxy* to, int expanded_rows[SIZE], int expanded_cols[SIZE]) {
     Galaxy* current = malloc(sizeof(Galaxy));
     current->row = from->row;
     current->col = from->col;
@@ -104,7 +104,6 @@ Galaxy* bfs(Galaxy* from, Galaxy* to, int expanded_rows[SIZE], int expanded_cols
             }
         }
 
-        current = realloc(current, sizeof(Galaxy));
         current->row = r;
         current->col = c;
         current->p1_depth = new_p1_depth;
@@ -165,7 +164,7 @@ int main() {
 
         for (int j=i+1; j < COUNT_GALAXY; j++) {
             Galaxy to = galaxies[j];
-            Galaxy* resp = bfs(&from, &to, expanded_rows, expanded_cols);
+            Galaxy* resp = distance(&from, &to, expanded_rows, expanded_cols);
             sum_p1 += resp->p1_depth;
             sum_p2 += resp->p2_depth;
         }
