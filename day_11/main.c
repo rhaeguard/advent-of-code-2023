@@ -7,7 +7,7 @@
 typedef struct Galaxy {
     int row;
     int col;
-    int depth;
+    long depth;
 } Galaxy;
 
 char decide_directions2(Galaxy* from, Galaxy* to) {
@@ -61,7 +61,7 @@ char decide_directions2(Galaxy* from, Galaxy* to) {
 
 
 int bfs2(Galaxy* from, Galaxy* to, int expanded_rows[SIZE], int expanded_cols[SIZE]) {
-    int depth = 0;
+    long depth = 0;
     Galaxy* current = malloc(sizeof(Galaxy));
     current->row = from->row;
     current->col = from->col;
@@ -74,7 +74,7 @@ int bfs2(Galaxy* from, Galaxy* to, int expanded_rows[SIZE], int expanded_cols[SI
             break;
         }
 
-        int new_depth = current->depth + 1;
+        long new_depth = current->depth + 1;
 
         char d = decide_directions2(current, to);
         int r = current->row;
@@ -85,14 +85,14 @@ int bfs2(Galaxy* from, Galaxy* to, int expanded_rows[SIZE], int expanded_cols[SI
             
             if (!seen_cols[c] && expanded_cols[c]) {
                 seen_cols[c] = 1;
-                new_depth++; 
+                new_depth += 999999; 
             }    
         } else if (d == 'r') {
             c++;
 
             if (!seen_cols[c] && expanded_cols[c]) {
                 seen_cols[c] = 1;
-                new_depth++; 
+                new_depth += 999999; 
             }
         } else {
             // d
@@ -100,25 +100,10 @@ int bfs2(Galaxy* from, Galaxy* to, int expanded_rows[SIZE], int expanded_cols[SI
 
             if (!seen_rows[r] && expanded_rows[r]) {
                 seen_rows[r] = 1;
-                new_depth++; 
+                new_depth += 999999; 
             }
         }
 
-        // printf("dir: %c\t%d %d\n", d, r, c);
-
-        // if you're in a expanded column and move L/R to another column +1
-        // if you're in an expanded row and move down to another row +1
-
-        // if ((!seen_rows[r] && expanded_rows[r]) || (!seen_cols[c] && expanded_cols[c])) {
-        //     if (expanded_rows[r]) {
-        //         seen_rows[c] = 1;
-        //     }
-
-        //     if (expanded_cols[c]) {
-        //         seen_cols[c] = 1;
-        //     }
-        //     new_depth++;
-        // }
         current = realloc(current, sizeof(Galaxy));
         current->row = r;
         current->col = c;
@@ -173,7 +158,7 @@ int main() {
         }
     }
     int c = 0;
-    int sum = 0;
+    long sum = 0;
     for (int i = 0; i < COUNT_GALAXY; i++) {
         Galaxy from = galaxies[i];
 
@@ -184,7 +169,7 @@ int main() {
         // break;
     }
 
-    printf("Part 1 answer: %d\n", sum);
+    printf("Part 1 answer: %ld\n", sum);
 
     fclose(file);
     return 0;
