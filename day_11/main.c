@@ -56,7 +56,7 @@ char decide_directions(Galaxy* from, Galaxy* to) {
     return dir;
 }
 
-
+// modified greedy DFS
 Galaxy* distance(Galaxy* from, Galaxy* to, int expanded_rows[SIZE], int expanded_cols[SIZE]) {
     Galaxy* current = malloc(sizeof(Galaxy));
     current->row = from->row;
@@ -65,11 +65,7 @@ Galaxy* distance(Galaxy* from, Galaxy* to, int expanded_rows[SIZE], int expanded
     current->p2_depth = 0;
     int seen_rows[SIZE] = {0}; 
     int seen_cols[SIZE] = {0};
-    while(1) {
-        if (current->row == to->row && current->col == to->col) {
-            return current;
-        }
-
+    while(!(current->row == to->row && current->col == to->col)) {
         long new_p1_depth = current->p1_depth + 1;
         long new_p2_depth = current->p2_depth + 1;
 
@@ -80,7 +76,7 @@ Galaxy* distance(Galaxy* from, Galaxy* to, int expanded_rows[SIZE], int expanded
         if (d == 'l') {
             c--;
             
-            if (!seen_cols[c] && expanded_cols[c]) {
+            if (!seen_cols[c] && expanded_cols[c] == 0) {
                 seen_cols[c] = 1;
                 new_p1_depth += 1;
                 new_p2_depth += 999999;
@@ -88,7 +84,7 @@ Galaxy* distance(Galaxy* from, Galaxy* to, int expanded_rows[SIZE], int expanded
         } else if (d == 'r') {
             c++;
 
-            if (!seen_cols[c] && expanded_cols[c]) {
+            if (!seen_cols[c] && expanded_cols[c] == 0) {
                 seen_cols[c] = 1;
                 new_p1_depth += 1;
                 new_p2_depth += 999999;
@@ -97,7 +93,7 @@ Galaxy* distance(Galaxy* from, Galaxy* to, int expanded_rows[SIZE], int expanded
             // d
             r++;
 
-            if (!seen_rows[r] && expanded_rows[r]) {
+            if (!seen_rows[r] && expanded_rows[r] == 0) {
                 seen_rows[r] = 1;
                 new_p1_depth += 1;
                 new_p2_depth += 999999;
@@ -110,7 +106,7 @@ Galaxy* distance(Galaxy* from, Galaxy* to, int expanded_rows[SIZE], int expanded
         current->p2_depth = new_p2_depth;
     }
 
-    return NULL;
+    return current;
 }
 
 int main() {
@@ -132,29 +128,11 @@ int main() {
                     .row=ln,
                     .col=i
                 };
+                expanded_rows[ln] = 1;
+                expanded_cols[i] = 1;
             }
         }
         ln++;
-    }
-
-    for (int i=0; i < SIZE; i++) {
-        expanded_rows[i] = 1;
-        for (int j=0; j < SIZE; j++) {
-            if (space[i][j]) {
-                expanded_rows[i] = 0;
-                break;
-            }
-        }
-    }
-
-    for (int i=0; i < SIZE; i++) {
-        expanded_cols[i] = 1;
-        for (int j=0; j < SIZE; j++) {
-            if (space[j][i]) {
-                expanded_cols[i] = 0;
-                break;
-            }
-        }
     }
 
     long sum_p1 = 0;
