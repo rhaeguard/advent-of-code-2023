@@ -1,2 +1,2 @@
 # Advent of Code 2023
-My Advent of Code solutions using C
+My Advent of Code solutions
